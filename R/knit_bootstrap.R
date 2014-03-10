@@ -116,7 +116,10 @@ knit_bootstrap =
                     markdown_options = markdown_options,
                     thumbsize=thumbsize,
                     show_code=show_code, show_output=show_output,
-                    show_figure=show_figure, ..., graphics=graphics)
+                    show_figure=show_figure,
+                    graphics=graphics,
+                    encoding=encoding,
+                    ...)
   invisible(output)
 }
 
@@ -144,7 +147,8 @@ function(input, output = NULL, boot_style=NULL, code_style=NULL, chooser=NULL,
          text = NULL, thumbsize=3, show_code=FALSE,
          show_output=TRUE, show_figure=TRUE,
          markdown_options=c('mathjax', 'base64_images', 'use_xhtml'),
-         graphics = getOption("menu.graphics"), ...) {
+         graphics = getOption("menu.graphics"),
+         encoding = getOption("encoding"), ...) {
 
   header = create_header(boot_style=boot_style, code_style=code_style,
                          chooser=chooser,
@@ -157,7 +161,7 @@ function(input, output = NULL, boot_style=NULL, code_style=NULL, chooser=NULL,
 
   if (is.null(text)) {
     markdown::markdownToHTML(input, header=header, stylesheet='',
-      options=markdown_options, output = output, ...)
+      options=markdown_options, output = output, encoding = encoding, ...)
   }
   else {
     markdown::markdownToHTML(text = input, header=header, stylesheet='',
@@ -178,7 +182,7 @@ function(input, output = NULL, boot_style=NULL, code_style=NULL, chooser=NULL,
 bootstrap_HTML = function(input, output = NULL, boot_style=NULL,
                           code_style=NULL, chooser=NULL, thumbsize=3,
                           show_code=FALSE, show_output=TRUE, show_figure=TRUE,
-                          graphics = getOption("menu.graphics")) {
+                          graphics = getOption("menu.graphics"), encoding=getOption("encoding")) {
   if(is.null(output))
     output <- sub_ext(input, 'html')
   if(input == output)
@@ -190,7 +194,7 @@ bootstrap_HTML = function(input, output = NULL, boot_style=NULL,
                          show_figure=show_figure, graphics=graphics,
                          outfile=FALSE)
 
-  lines = read_file(input)
+  lines = read_file(input, encoding=encoding)
 
   #bit of a hack, check if substitute happened based on string length
   input_length = nchar(lines)
@@ -316,15 +320,22 @@ append_files <- function(files){
   paste(mapply(read_package_file, files), collapse='\n')
 }
 
+# @kohske
+# Assuming libraries are written with ascii characters, this function
+# does not have param "encoding".
 read_package_file <- function(path){
   location = paste(system.file(package='knitrBootstrap'), path, sep='/')
   read_file(location)
 }
 
-read_file <- function(file){
+read_file <- function(file, encoding = getOption("encoding")){
   if(!file.exists(file))
     stop('file: ', file, ' does not exist')
-  readChar(file, 10e6)
+  
+  # @kohske
+  # changed from readChar to readLines
+  # readLines converts encoding to native.enc
+  paste0(readLines(file, encoding=encoding), collapse="\n")
 }
 
 # substitute extension, from knitr
